@@ -1,0 +1,8 @@
+# Map feature name (or prefix before the _last/_mean/... suffix) to a plain-English adverse-action reason.
+# Anything not listed falls back to "Elevated risk indicated by <feature>".
+P_2: "Low or deteriorating payment-behaviour score"
+D_39: "Delinquency indicator elevated"
+B_1: "High balance-related risk indicator"
+B_2: "Balance utilisation pattern indicates risk"
+R_1: "Recent risk event indicator"
+S_3: "Spend pattern indicator elevated"

@@ -1,0 +1,15 @@
+pandas
+numpy
+pyarrow
+polars
+scikit-learn
+lightgbm
+mlflow>=3.0
+matplotlib
+pyyaml
+fastapi
+uvicorn
+httpx
+pytest
+anthropic          # optional: LLM commentary (falls back to a template without a key)
+# apache-airflow   # install separately with the official constraints file, see README

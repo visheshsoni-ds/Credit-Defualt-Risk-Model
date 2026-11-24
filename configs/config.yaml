@@ -1,0 +1,81 @@
+# ---------- paths ----------
+paths:
+  raw_data: data/raw/train_data.parquet        # Amex statement-level data (csv or parquet)
+  raw_labels: data/raw/train_labels.csv
+  features: data/processed/features.parquet    # one row per customer
+  incoming: data/incoming                      # daily batches for monitoring
+  reports: reports
+
+# ---------- mlflow ----------
+mlflow:
+  tracking_uri: http://127.0.0.1:5000          # run: mlflow server --serve-artifacts (see README)
+  experiment: credit_default_pd
+  monitoring_experiment: credit_default_pd_monitoring
+  model_name: credit_default_pd
+
+# ---------- data ----------
+data:
+  id_col: customer_ID
+  date_col: S_2
+  target_col: target
+  categorical: [B_30, B_38, D_114, D_116, D_117, D_120, D_126, D_63, D_64, D_66, D_68]
+  split:
+    mode: stratified        # stratified | time  (Amex train has one row per customer after aggregation,
+    valid_size: 0.15        #                     and last-statement dates are tightly clustered, so
+    test_size: 0.15         #                     'stratified' is the honest default)
+    seed: 42
+
+# ---------- models ----------
+lightgbm:
+  params:
+    objective: binary
+    learning_rate: 0.03
+    num_leaves: 64
+    feature_fraction: 0.5
+    bagging_fraction: 0.8
+    bagging_freq: 1
+    min_data_in_leaf: 50
+    seed: 42
+    verbosity: -1
+  num_boost_round: 1500
+  early_stopping_rounds: 100
+
+scorecard:
+  n_bins: 10
+  iv_min: 0.02
+  max_features: 30
+  base_score: 600
+  base_odds: 50          # good:bad odds at base_score
+  pdo: 20                # points to double the odds
+  C: 1.0
+
+# ---------- validation gate (step 3) ----------
+gate:
+  min_auc: 0.75
+  min_ks: 0.40
+  max_calibration_excess_gap: 0.02  # decile |mean PD - observed| beyond 3 std-errors of sampling noise
+  max_portfolio_pd_error: 0.02      # |overall mean PD - overall default rate|
+  max_generalisation_gap: 0.10   # train AUC - test AUC (GBMs fit train very tightly; tune to your data)
+  min_uplift_vs_champion: 0.002  # AUC the challenger must add over the current champion
+
+# ---------- monitoring (step 5) ----------
+monitoring:
+  psi_watch: 0.10
+  psi_retrain: 0.25
+  watch_amber_features: 5        # >= this many amber features -> WATCH (PSI is noisy on small daily batches)
+  max_red_features: 10           # >= this many features with PSI > psi_retrain -> retrain
+  min_auc_floor: 0.72            # back-test floor (only when labels are present)
+  reference_rows: 20000
+  reference_features: 100        # top-N model features stored as the drift baseline
+  top_n_features: 15             # features listed in the report
+
+# ---------- serving (step 7) ----------
+serving:
+  alias: champion
+  reload_seconds: 60
+  top_reasons: 4
+  risk_bands:                    # score >= threshold -> band (higher score = lower risk)
+    - {name: A, min_score: 640}
+    - {name: B, min_score: 600}
+    - {name: C, min_score: 560}
+    - {name: D, min_score: -1000}

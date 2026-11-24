@@ -1,0 +1,13 @@
+mlruns/
+mlartifacts/
+*.db
+data/raw/*
+data/processed/*
+data/incoming/*
+!data/**/.gitkeep
+reports/*
+!reports/.gitkeep
+__pycache__/
+.venv/
+.pytest_cache/
+*.pyc
